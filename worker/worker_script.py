@@ -93,6 +93,7 @@ def get_base_opts(use_cookies=True):
         'remote_components': {'ejs:github'},
         'merge_output_format': 'mp4',
         'prefer_ffmpeg': True,
+        'ffmpeg_location': '/usr/bin/ffmpeg',
     }
     
     # Configure GetPOT with local script if path found in workflow
@@ -165,11 +166,15 @@ def get_metadata():
         
         for f in info.get("formats", []):
             if f.get("vcodec") != "none":
+                # Check if this specific format already has audio
+                has_audio = f.get("acodec") != "none"
                 metadata["formats"].append({
                     "format_id": f.get("format_id"),
                     "quality": f.get("format_note") or f.get("resolution"),
                     "ext": f.get("ext"),
-                    "filesize": f.get("filesize") or f.get("filesize_approx")
+                    "filesize": f.get("filesize") or f.get("filesize_approx"),
+                    "has_audio": has_audio,
+                    "note": f.get("format_note", "")
                 })
         
         if not metadata["formats"]:
@@ -204,10 +209,17 @@ def run_download():
     
     try:
         opts = get_base_opts(use_cookies=True)
+        # Force audio merge for DASH formats
+        # If the user chose a format that ALREADY has audio, 'bestaudio' will be ignored by yt-dlp usually
+        # but the merge ensures we have a fallback.
         opts.update({
-            'format': f"{FORMAT_ID}+bestaudio/best" if FORMAT_ID else 'best',
+            'format': f"{FORMAT_ID}+bestaudio/best" if FORMAT_ID else 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
             'outtmpl': local_filename,
-            'progress_hooks': [progress_hook]
+            'progress_hooks': [progress_hook],
+            'postprocessors': [{
+                'key': 'FFmpegVideoConvertor',
+                'preferedformat': 'mp4',
+            }],
         })
         
         with yt_dlp.YoutubeDL(opts) as ydl:
