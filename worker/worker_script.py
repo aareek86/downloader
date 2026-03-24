@@ -91,6 +91,8 @@ def get_base_opts(use_cookies=True):
         'noprogress': True,
         'no_color': True,
         'remote_components': {'ejs:github'},
+        'merge_output_format': 'mp4',
+        'prefer_ffmpeg': True,
     }
     
     # Configure GetPOT with local script if path found in workflow
@@ -203,7 +205,7 @@ def run_download():
     try:
         opts = get_base_opts(use_cookies=True)
         opts.update({
-            'format': FORMAT_ID if FORMAT_ID else 'best',
+            'format': f"{FORMAT_ID}+bestaudio/best" if FORMAT_ID else 'best',
             'outtmpl': local_filename,
             'progress_hooks': [progress_hook]
         })

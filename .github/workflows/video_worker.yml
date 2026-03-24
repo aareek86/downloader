@@ -32,6 +32,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version
+
       - name: Set up Deno
         run: |
           curl -fsSL https://deno.land/x/install/install.sh | sh
